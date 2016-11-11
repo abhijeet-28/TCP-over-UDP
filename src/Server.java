@@ -38,27 +38,26 @@ public class Server {
     public static void main(String[] args) throws IOException{
         port = 4900;
         socket=new DatagramSocket(port);
-        int i =0;
         byte[] data = new byte[256];
         DatagramPacket packet = new DatagramPacket(data, data.length);
-        while(true){
+        int cnt =0;
+        while(true&&cnt<10){
+            cnt++;
             socket.receive(packet);
-            System.out.println((new String(packet.getData())).trim());
+            System.out.println(cnt+" iteration");
             String received[] = new String[2];
             received=(new String(packet.getData())).trim().split(":");
-            System.out.println("[0] = "+received[0]);
-            System.out.println("[1] = "+received[1]);
+            System.out.println("received[0] = "+received[0]);
+            System.out.println("received[1] = "+received[1]);
             socket.setSoTimeout(5000);
             address=InetAddress.getByName("127.0.0.1");
             byte[] data_send;
-            data_send=convertBytes(received[0],100);
+            data_send=convertBytes(received[0]+":"+received[1],100);
             InetAddress address_send = packet.getAddress();
             int port_send = packet.getPort();
             packet = new DatagramPacket(data_send, data_send.length, address_send, port_send);
-            System.out.println("port_send = "+port_send+", address_send= "+address_send);
+            System.out.println("data_send = "+received[0]);
             socket.send(packet);
-            i++;
-            System.out.println("sent! "+i+" times");
         }
     }
 }

@@ -33,12 +33,12 @@ public class Client {
 	return requested;
     }
     
-    public static int[][] getPacketInfo(int free, int last_ack_rec){
+    public static int[][] getPacketInfo(int free, int last_ack_seq_rec, int last_ack_len_rec){
         //result[i][0]:: ith pkts's sequence id; result[i][1]:: ith pkt's size
         int[][] result = new int[(free%mss == 0)?((int)free/mss):(((int)free/mss)+1)][2];
         int i =0;
         while(free>0){
-            result[i][0] = last_ack_rec;
+            result[i][0] = last_ack_seq_rec+last_ack_len_rec;
             if(free>mss){
                 result[i][1]=mss;
             }
@@ -46,7 +46,7 @@ public class Client {
                 result[i][1]=free;
             }
             i++;
-            last_ack_rec+=mss;
+            last_ack_seq_rec+=mss;
             free-=mss;
         }
         return result;
@@ -56,7 +56,10 @@ public class Client {
         
         int free = mss;
         int W = mss;
-        int lar = 0;//LastAcknowledgementReceivedfromreceiver
+        int lasr = 0;//LastAcknowledgementSeqReceivedfromreceiver
+        int lalr = 0;//LastAcknowledgementLengthReceivedfromreceiver
+        int lsps = 0;//LastSenrPacketSeq
+        int lspl = 0;//LastSentPacketLength
         int[][] packet_info;
         Queue<Long[]> timer = new LinkedList<Long[]>();
         //ArrayList
@@ -67,7 +70,7 @@ public class Client {
         int count=0;
         while(true){
             socket.setSoTimeout(5000);
-            packet_info = getPacketInfo(free,lar);
+            packet_info = getPacketInfo(free,lsps,lspl);
             for(int[] num_pkts : packet_info ){
                 System.out.println(num_pkts[0]+":"+num_pkts[1]);
                 data=convertBytes(num_pkts[0]+":"+num_pkts[1],num_pkts[1]);
@@ -77,25 +80,27 @@ public class Client {
                 timer_data[0] = System.currentTimeMillis();
                 timer_data[1] = (long)(num_pkts[0]);
                 timer_data[2] = (long)(num_pkts[1]);
+                lsps = num_pkts[0];
+                lspl = num_pkts[1];
                 timer.add(timer_data);
-            }
-            for(int i =0; i<5; i++){
-                System.out.println("i = "+i);
+                System.out.println("timer_data[0] = "+timer_data[0]+"timer_data[1](lsps) = "+timer_data[1]+"timer_data[2](lspl) = "+timer_data[2]);
             }
             byte[] receiver=new byte[P];
             DatagramPacket packet1 = new DatagramPacket(receiver, receiver.length);
             while(true){
                 try{
                     socket.receive(packet1);
-                    String received = (new String(packet1.getData())).trim();
-                    System.out.println("received = "+received+", currenttime = "+System.currentTimeMillis());
+                    String received[] = new String[2];
+                    received = (new String(packet1.getData())).trim().split(":");
+                    System.out.println("received[0](seq) = "+received[0]+", received[1](len) = "+received[1]+", currenttime = "+System.currentTimeMillis());
                     if(System.currentTimeMillis()-timer.peek()[0]<t_val){
-                        if(timer.peek()[1]==Long.parseLong(received)){
-                            lar=timer.peek()[1].intValue();
+                        if(timer.peek()[1]==Long.parseLong(received[0])){
+                            lasr=timer.peek()[1].intValue();
+                            lalr=timer.peek()[2].intValue();
                             free=timer.peek()[2].intValue() + mss*mss/W;
-                            W = mss*mss/W;
+                            W = W+mss*mss/W;
                             timer.remove();
-                            System.out.println("timer ack matches received ack; lar = "+lar+", free = "+free+", W = "+W);
+                            System.out.println("timer ack matches received ack; lasr = "+lasr+", free = "+free+", W = "+W);
                             break;
                         }
                         else{
@@ -107,7 +112,7 @@ public class Client {
                         W = mss;
                         free = mss;
                         //lar unchanged
-                        System.out.println("timeout; lar = "+lar+", free = "+free+", W = "+W);
+                        System.out.println("timeout; lasr = "+lasr+", free = "+free+", W = "+W);
                         break;
                     }
                 }
