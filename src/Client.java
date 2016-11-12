@@ -58,7 +58,7 @@ public class Client {
         int W = mss;
         int lasr = 0;//LastAcknowledgementSeqReceivedfromreceiver
         int lalr = 0;//LastAcknowledgementLengthReceivedfromreceiver
-        int lsps = 0;//LastSenrPacketSeq
+        int lsps = 0;//LastSentPacketSeq
         int lspl = 0;//LastSentPacketLength
         int[][] packet_info;
         int t_out =1000;
@@ -76,7 +76,12 @@ public class Client {
         address=InetAddress.getByName("127.0.0.1");
         int count=0;
         boolean timeout = false;
-        while(true){
+        while(lasr+lalr<100000){
+
+
+
+
+
             socket.setSoTimeout(t_out);
             if(timeout){
                 packet_info = getPacketInfo(free,lasr,lalr);
@@ -135,7 +140,25 @@ public class Client {
                         break;
                     }
                     else{
-                        System.out.println("timer ack seq mismatches received ack's cum num which is "+received[0]+",\nfree = "+free+",\nW = "+W);
+                        //System.out.println("timer ack seq mismatches received ack's cum num which is "+received[0]+",\nfree = "+free+",\nW = "+W);
+
+                        for(Long[] timer_d: timer)
+                        {
+                        	//System.out.println(timer_d[0]);
+                        	if(timer_d[0] <= Long.parseLong(received[0]))
+                        	{
+                        		 W = W+mss*mss/W;
+                        		 free+=timer_d[1];
+                        		timer.remove(timer_d);
+
+
+
+                        	}
+                        	
+                        }
+                    	
+
+
                     }
                 }
                 catch(SocketTimeoutException e){

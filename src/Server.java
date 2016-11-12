@@ -42,7 +42,7 @@ public class Server {
         DatagramPacket packet = new DatagramPacket(data, data.length);
         int cnt =0;
         int cum_ack = 0;
-        while(true&&cnt<10){
+        while(true){
             cnt++;
             socket.receive(packet);
             System.out.println(cnt+" iteration");
