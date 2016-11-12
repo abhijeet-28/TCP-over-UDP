@@ -41,6 +41,7 @@ public class Server {
         byte[] data = new byte[256];
         DatagramPacket packet = new DatagramPacket(data, data.length);
         int cnt =0;
+        int cum_ack = 0;
         while(true&&cnt<10){
             cnt++;
             socket.receive(packet);
@@ -49,15 +50,27 @@ public class Server {
             received=(new String(packet.getData())).trim().split(":");
             System.out.println("received[0] = "+received[0]);
             System.out.println("received[1] = "+received[1]);
-            socket.setSoTimeout(5000);
+            socket.setSoTimeout(50000);
             address=InetAddress.getByName("127.0.0.1");
             byte[] data_send;
-            data_send=convertBytes(received[0]+":"+received[1],100);
-            InetAddress address_send = packet.getAddress();
-            int port_send = packet.getPort();
-            packet = new DatagramPacket(data_send, data_send.length, address_send, port_send);
-            System.out.println("data_send = "+received[0]);
-            socket.send(packet);
+            if(received[0].equals("2000")&&cnt<6&&false){
+                System.out.println("deliberate ack sending failure");
+                //data_send=convertBytes("2001"+":"+received[1],100);
+            }
+            else{
+                if(Integer.parseInt(received[0])<=cum_ack){
+                    cum_ack += Integer.parseInt(received[1]);
+                }
+                else{
+                    //do nothing
+                }
+                data_send = convertBytes(cum_ack+":"+received[1],100);
+                InetAddress address_send = packet.getAddress();
+                int port_send = packet.getPort();
+                packet = new DatagramPacket(data_send, data_send.length, address_send, port_send);
+                System.out.println("data_send = "+received[0]);
+                socket.send(packet);
+            }
         }
     }
 }
