@@ -60,16 +60,15 @@ public class Server {
             else{
                 if(Integer.parseInt(received[0])<=cum_ack){
                     cum_ack += Integer.parseInt(received[1]);
-                }
-                else{
-                    //do nothing
-                }
-                data_send = convertBytes(cum_ack+":"+received[1],100);
+                     data_send = convertBytes(cum_ack+":"+received[1],100);
                 InetAddress address_send = packet.getAddress();
                 int port_send = packet.getPort();
                 packet = new DatagramPacket(data_send, data_send.length, address_send, port_send);
                 System.out.println("data_send = "+received[0]);
                 socket.send(packet);
+                }
+                
+               
             }
         }
     }
